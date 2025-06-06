@@ -33,9 +33,12 @@ import com.example.coffee_shop.R
 import com.example.coffee_shop.data.Coffee
 import com.example.coffee_shop.data.CartRepository
 import com.example.coffee_shop.data.CoffeeRepository
+import com.example.coffee_shop.data.WeatherService
+import com.example.coffee_shop.data.WeatherResponse
 import com.example.coffee_shop.ui.components.*
 import com.example.coffee_shop.viewmodels.AuthState
 import com.example.coffee_shop.viewmodels.AuthViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +52,18 @@ fun HomeScreen(navController: NavController, authViewModel: AuthViewModel) {
     val categories = remember { CoffeeRepository.getCategories() }
     val slideImages = remember { listOf("slide1", "slide2", "slide3") }
     val authState = authViewModel.authstate.observeAsState()
+    
+    // Weather state
+    var weatherData by remember { mutableStateOf<WeatherResponse?>(null) }
+    val scope = rememberCoroutineScope()
+    
+    // Fetch weather data on screen load
+    LaunchedEffect(Unit) {
+        scope.launch {
+            weatherData = WeatherService.getWeather("Colombo")
+        }
+    }
+    
     LaunchedEffect(authState.value) {
         when (authState.value) {
             is AuthState.Unauthenticated -> navController.navigate("login")
@@ -74,29 +89,49 @@ fun HomeScreen(navController: NavController, authViewModel: AuthViewModel) {
                 .padding(horizontal = 16.dp)
                 .padding(top = 16.dp)
         ) {
-            // Greeting Section
-            Column(
-                modifier = Modifier.padding(bottom = 32.dp)
+            // Greeting Section with Weather
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 32.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Text(
-                    text = "Hello Thavishka!",
-                    fontSize = 18.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Normal
-                )
-                Text(
-                    text = "It's A Best Day",
-                    fontSize = 28.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 32.sp
-                )
-                Text(
-                    text = "For A Coffee",
-                    fontSize = 28.sp,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 32.sp
+                // Greeting text
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = "Hello Thavishka!",
+                        fontSize = 18.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Normal
+                    )
+                    Text(
+                        text = "It's A Best Day",
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+                    Text(
+                        text = "For A Coffee",
+                        fontSize = 28.sp,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        lineHeight = 32.sp
+                    )
+                }
+                
+                // Weather widget
+                WeatherWidget(
+                    weather = weatherData,
+                    modifier = Modifier.padding(start = 16.dp),
+                    onRefresh = {
+                        scope.launch {
+                            weatherData = WeatherService.getWeather("Colombo")
+                        }
+                    }
                 )
             }
             
